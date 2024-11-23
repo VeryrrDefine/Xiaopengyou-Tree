@@ -759,3 +759,6 @@ button > * {
 .star:after {
 	transform: rotate(35deg);
 }
+.test{
+	color: #fe8f3a
+}
