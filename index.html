@@ -10,13 +10,13 @@
 	<script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
 	<script src="js/technical/break_eternity.js"></script>
 	<script src="js/technical/layerSupport.js"></script>
+	<script src="js/calculate.js"></script>
 	<script src="js/tree.js"></script>
 	<script src="js/layers.js"></script>
 	<script src="js/mod.js"></script>
 	<script src="js/technical/temp.js"></script>
 	<script src="js/technical/displays.js"></script>
 
-	<script src="js/calculate.js"></script>
 	<script src="js/game.js"></script>
 	<script src="js/utils.js"></script>
 	<script src="js/utils/easyAccess.js"></script>
@@ -28,6 +28,7 @@
 	<script src="js/utils/options.js"></script>
 	<script src="js/utils/save.js"></script>
 	<script src="js/utils/themes.js"></script>
+	
 
 </head>
 
@@ -126,4 +127,39 @@
 			</div>
 		</div>
 	</div>
+	<style>
+		
+		#newsTicker {
+	margin: 10px;
+	margin-left: 50px;
+	margin-right: 50px;
+
+	border: 3px solid white;
+	border-radius: 5px;
+
+  padding: 5px;
+
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+#newsContent {
+	transition-duration: 0s !important;
+}
+#newsbtn {
+	font-size: 32px;
+	color: rgb(255, 255, 255);
+	position: absolute;
+	top: 240px;
+	left: 4px;
+	cursor: pointer;
+	width: 40px;
+	height: 40px;
+}
+
+#newsbtn:hover {
+	transform: scale(1.2, 1.2);
+	text-shadow: 5px 0px 10px #02f2f2, -3px 0px 12px #02f2f2;
+}
+	</style>
 </body>

@@ -762,3 +762,7 @@ button > * {
 .test{
 	color: #fe8f3a
 }
+
+.upgradetitle>h3{
+	font-size: 150%
+}

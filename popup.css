@@ -42,7 +42,9 @@
 .redtext {
 	color: red;
 }
-
+.how{
+	color: #380af7
+}
 .particle {
 	background-color: transparent;
 	display: block;

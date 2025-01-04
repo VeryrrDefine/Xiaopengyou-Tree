@@ -12,11 +12,15 @@ let modInfo = {
 
 // Set your version in num and name
 let VERSION = {
-	num: "0.2",
-	name: "小朋友^3",
+	num: "0.3",
+	name: "小朋友^4",
 }
 
 let changelog = `<h1>更新日志:</h1><br>
+<h3>v0.3</h3><br>
+    - 增加了小朋友^3.5<br>
+	- 增加了小朋友^4<br>
+	- 增加了小朋友^3.5 购买项<br>
 <h3>v0.2</h3><br>
 	- 增加了小朋友^2<br>
 	- 增加了小朋友^2.5<br>
@@ -25,7 +29,7 @@ let changelog = `<h1>更新日志:</h1><br>
 	- 增加了小朋友^1<br>
 	- 增加了小朋友^1.5`
 
-let winText = `Congratulations! You have reached the end and beaten this game, but for now...`
+let winText = `恭喜通关...? 你已经通关了游戏， 但现在...`
 
 // If you add new functions anywhere inside of a layer, and those functions have an effect when called, add them here.
 // (The ones here are examples, all official functions are already taken care of)
@@ -46,7 +50,7 @@ function getPointGen() {
 		return new ExpantaNum(0)
 
 	let gain = new ExpantaNum(0)
-	if (hasUpgrade('p', 11)) gain = gain.add(1)
+	if (hasUpgrade('p', 11)) gain = gain.add(10)
 	if (hasUpgrade("p", 12)) gain = gain.mul(upgradeEffect("p", 12))
 	if (hasUpgrade("p", 13)) gain = gain.mul(upgradeEffect("p", 13))
 	gain = gain.mul(buyableEffect("p", 11))
@@ -59,20 +63,67 @@ function getPointGen() {
 	gain = gain.mul(tmp.d.effect)
 	if (hasChallenge("d", 11)) gain = gain.pow(1.06)
 	
+	if (inChallenge("d", 12)) gain = gain.pow(0.2)
+
+	if(gain.gte(player.pointSoftcapStart))  gain=gain.div(player.pointSoftcapStart).pow(player.pointSoftcapPower).mul(player.pointSoftcapStart)
+	
+	gain = gain.mul(tmp.f.effect)
+	gain = gain.mul(buyableEffect("e", 13))
 	return gain
 }
 
+function pointSoftcapPower() {
+	let power=new ExpantaNum(0.5)
+	if (hasUpgrade("e", 22)) power = power.add(0.125)
+	return power
+}
+function pointSoftcapStart() {
+	let start = ExpantaNum.pow(2, 1024);
+
+	return start;
+}
 // You can add non-layer related variables that should to into "player" and be saved here, along with default values
 function addedPlayerData() { return {
+	pointSoftcapStart: ExpantaNum.pow(2, 1024),
+	pointSoftcapPower: new ExpantaNum(".5"),
+	hideNews: false,
+	newsTotal: new ExpantaNum(0),
 }}
 
+/*
+
+<div style="
+    display: inline-flex;
+    flex-direction: column;
+"><span style="
+    text-align: center;
+">199</span><div style="
+    border: 0.5px solid black;
+"></div><span style="text-align:center;">2997932050</span></div>
+
+*/
+function generateFrac(x, y, fracColor="white"){
+	return `<div style="
+    display: inline-flex;
+    flex-direction: column;
+"><span style="
+    text-align: center;
+">${x}</span><div style="
+    border: 0.5px solid ${fracColor};
+"></div><span style="text-align:center;">${y}</span></div>`
+}
 // Display extra things at the top of the page
 var displayThings = [
+	function (){
+		let a = ""
+		if(getPointGen().gte(player.pointSoftcapStart.pow(0.9))) a=a+"<br>小朋友获取量在"+format(player.pointSoftcapStart)+"达到软上限！";
+		return a;
+	}
 ]
 
 // Determines when the game "ends"
 function isEndgame() {
-	return false
+	return player.points.gte("1e1121000")
 }
 
 
