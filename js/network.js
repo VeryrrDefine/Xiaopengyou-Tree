@@ -42,6 +42,9 @@ addLayer("NW", {
                     return "注： 星期一——星期五服务器大部分时间不在线"
                 }],
                 ["raw-html", function () {
+                    return location.protocol == "https:" ? "由于浏览器的机制，且服务器使用http协议，当前暂不支持网络功能" : ""
+                }],
+                ["raw-html", function () {
                     return "send mail to hrp1167@outlook.com to register(take username password there)"
                 }],
                 ["raw-html", function () {
