@@ -12,11 +12,14 @@ let modInfo = {
 
 // Set your version in num and name
 let VERSION = {
-	num: "0.3",
-	name: "小朋友^4",
+	num: "0.4",
+	name: "小朋友^4×3",
 }
 
 let changelog = `<h1>更新日志:</h1><br>
+<h3>v0.4</h3><br>
+    - 增加了小朋友^4维度<br>
+	- 增加了拜谢<br>
 <h3>v0.3</h3><br>
     - 增加了小朋友^3.5<br>
 	- 增加了小朋友^4<br>
@@ -69,6 +72,11 @@ function getPointGen() {
 	
 	gain = gain.mul(tmp.f.effect)
 	gain = gain.mul(buyableEffect("e", 13))
+
+	gain = gain.pow(tmp.f.baixieEffect[1].max(1))
+
+	if(gain.gte(player.pointSoftcapStart2))  gain=gain.div(player.pointSoftcapStart2).pow(player.pointSoftcapPower2).mul(player.pointSoftcapStart2)
+	
 	return gain
 }
 
@@ -82,10 +90,21 @@ function pointSoftcapStart() {
 
 	return start;
 }
+function pointSoftcapPower2() {
+	let power=new ExpantaNum(0.5)
+	return power
+}
+function pointSoftcapStart2() {
+	let start = ExpantaNum.pow(10, 1700000000);
+
+	return start;
+}
 // You can add non-layer related variables that should to into "player" and be saved here, along with default values
 function addedPlayerData() { return {
 	pointSoftcapStart: ExpantaNum.pow(2, 1024),
 	pointSoftcapPower: new ExpantaNum(".5"),
+	pointSoftcapStart2: ExpantaNum.pow(10, 1700000000),
+	pointSoftcapPower2: new ExpantaNum(".5"),
 	hideNews: false,
 	newsTotal: new ExpantaNum(0),
 }}
@@ -116,14 +135,19 @@ function generateFrac(x, y, fracColor="white"){
 var displayThings = [
 	function (){
 		let a = ""
-		if(getPointGen().gte(player.pointSoftcapStart.pow(0.9))) a=a+"<br>小朋友获取量在"+format(player.pointSoftcapStart)+"达到软上限！";
+		if(getPointGen().gte(player.pointSoftcapStart)) a=a+"<br>小朋友获取量在"+format(player.pointSoftcapStart)+"达到软上限！";
 		return a;
-	}
+	},
+	function (){
+		let a = ""
+		if(getPointGen().gte(player.pointSoftcapStart2)) a=a+"小朋友获取量在"+format(player.pointSoftcapStart2)+"达到二阶软上限！";
+		return a;
+	},
 ]
 
 // Determines when the game "ends"
 function isEndgame() {
-	return player.points.gte("1e1121000")
+	return player.points.gte("e9007199254740991")
 }
 
 

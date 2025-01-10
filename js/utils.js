@@ -1,3 +1,21 @@
+/*function optionalChaining(object, key){
+	if (object === void 0 || object === null){
+		return void 0
+	} else {
+		return object[key]
+	}
+}
+
+function optionalChainingCallFunction(object, key){
+	if (object === void 0 || object === null){
+		return void 0
+	} else if (object[key] === void 0 || object === null){
+			return void 0
+	} else {
+		return object[key]()
+	}
+}*/
+
 // ************ Big Feature related ************
 
 function respecBuyables(layer) {

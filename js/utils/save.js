@@ -1,6 +1,55 @@
 // ************ Save stuff ************
+var formatsave = {
+	encoder: new TextEncoder(),
+	decoder: new TextDecoder(),
+	startString: 'XPYTreeSaveFile',
+	endString: 'EndOfXPYSaveFile',
+	steps: [{
+		encode: JSON.stringify,
+		decode: JSON.parse
+	  },
+	  {
+		encode: x => formatsave.encoder.encode(x),
+		decode: x => formatsave.decoder.decode(x)
+	  },
+	  {
+		encode: x => pako.deflate(x),
+		decode: x => pako.inflate(x)
+	  },
+	  {
+		encode: x => Array.from(x).map(i => String.fromCharCode(i)).join(""),
+		decode: x => Uint8Array.from(Array.from(x).map(i => i.charCodeAt(0)))
+	  },
+	  {
+		encode: x => btoa(x),
+		decode: x => atob(x)
+	  },
+	  {
+		encode: x => x.replace(/=+$/g, "").replace(/0/g, "0a").replace(/\+/g, "0b").replace(/\//g, "0c"),
+		decode: x => x.replace(/0b/g, "+").replace(/0c/g, "/").replace(/0a/g, "0")
+	  },
+	  {
+		encode: x => formatsave.startString + x + formatsave.endString,
+		decode: x => x.slice(x.indexOf(formatsave.startString)
+		+formatsave.startString.length, x.indexOf(formatsave.endString)),
+	  }
+	],
+	encode(s) {
+	  return this.steps.reduce((x, f) => f.encode(x), s);
+	},
+	decode(s) {
+	  if (s.indexOf(formatsave.startString)!== -1) {
+		return this.steps.reduceRight((x, f) => f.decode(x), s);
+	  } else {
+		return JSON.parse(atob(s));
+	  }
+	},
+  }
+
 function save() {
-	localStorage.setItem(modInfo.id, btoa(unescape(encodeURIComponent(JSON.stringify(player)))));
+	// localStorage.setItem(modInfo.id, formatsave.encode(player));
+	//localStorage.setItem(modInfo.id, btoa(unescape(encodeURIComponent(JSON.stringify(player)))));
+	localStorage.setItem(modInfo.id, formatsave.encode(player));
   //ok it saved fine so the problem must be when loading
 }
 function startPlayerBase() {
@@ -196,7 +245,11 @@ function load() {
 	if (get === null || get === undefined)
 		player = getStartPlayer();
 	else
-		player = Object.assign(getStartPlayer(), JSON.parse(atob(get)));
+		if (get.startsWith("ey")){
+			player = Object.assign(getStartPlayer(), JSON.parse(atob(get)));
+		} else {
+			player = Object.assign(getStartPlayer(), formatsave.decode(get))
+		}
 	fixSave();
 
 	if (player.offlineProd) {
@@ -251,7 +304,7 @@ function NaNcheck(data) {
 	}
 }
 function exportSave() {
-	let str = btoa(JSON.stringify(player));
+	let str = formatsave.encode(player);
 
 	const el = document.createElement("textarea");
 	el.value = str;
@@ -265,7 +318,7 @@ function importSave(imported = undefined, forced = false) {
 	if (imported === undefined)
 		imported = prompt("Paste your save here");
 	try {
-		tempPlr = Object.assign(getStartPlayer(), JSON.parse(atob(imported)));
+		tempPlr = Object.assign(getStartPlayer(), formatsave.decode(imported));
 		if (tempPlr.versionType != modInfo.id && !forced && !confirm("This save appears to be for a different mod! Are you sure you want to import?")) // Wrong save (use "Forced" to force it to accept.)
 			return;
 		player = tempPlr;

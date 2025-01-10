@@ -1,3 +1,36 @@
+
+
+addLayer("a", {
+    name: "成就", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: "A", // This appears on the layer's node. Default is the id with the first letter capitalized
+    position: 2, // Horizontal position within a row. By default it uses the layer id and sorts in alphabetical order
+    startData() { return {
+        unlocked: true,
+        points: new ExpantaNum(0),
+    }},
+    tooltip() {
+      return "成就"
+    },
+    color: "#FFFF00",
+    nodeStyle() {return {
+        "background": "radial-gradient(#FFFF00, #d5ad83)" ,
+    }},
+    requires: new ExpantaNum(0), // Can be a function that takes requirement increases into account
+    resource: "成就点数",
+    type: "none", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
+    exponent: 0.5, // Prestige currency exponent
+    row: "side", // Row the layer is in on the tree (0 is the first row)
+    layerShown() { return false },
+    achievements: {
+    },
+    tabFormat: {
+        "成就" :{
+            content: ["main-display",
+            "achievements"]
+        },
+    },
+})
+
 addLayer("p", {
     name: "小朋友^1.5", // This is optional, only used in a few places, If absent it just uses the layer id.
     symbol: "1.5", // This appears on the layer's node. Default is the id with the first letter capitalized
@@ -9,7 +42,12 @@ addLayer("p", {
         };
     },
     update() {
+        player.pointSoftcapStart = pointSoftcapStart();
         player.pointSoftcapPower = pointSoftcapPower();
+        player.pointSoftcapStart2 = pointSoftcapStart2();
+        player.pointSoftcapPower = pointSoftcapPower2();
+        
+
     },
     showTotal: true,
     showBest: true,
@@ -95,7 +133,7 @@ addLayer("p", {
         }
     },
     layerShown() {
-        return true;
+        return true && player.thenewyearLay.treelayer == 0;
     },
     upgrades: {
         11: {
@@ -383,7 +421,7 @@ addLayer("b", {
     ],
     branches: ["p"],
     layerShown() {
-        return hasUpgrade("p", 25) || player[this.layer].unlocked;
+        return ( hasUpgrade("p", 25) || player[this.layer].unlocked) && player.thenewyearLay.treelayer == 0;
     },
     resetsNothing() {
         return hasUpgrade("c", 12) || hasMilestone("f", 0);
@@ -594,7 +632,7 @@ addLayer("c", {
     ],
     branches: ["p"],
     layerShown() {
-        return player.b.unlocked;
+        return player.b.unlocked  && player.thenewyearLay.treelayer == 0;
     },
     milestones: {
         0: {
@@ -761,7 +799,7 @@ addLayer("d", {
     ],
     branches: ["b", "c"],
     layerShown() {
-        return player.b.unlocked || player.c.unlocked || player.d.unlocked;
+        return (player.b.unlocked || player.c.unlocked || player.d.unlocked) && player.thenewyearLay.treelayer == 0;
     },
     tabFormat: {
         Main: {
@@ -1001,7 +1039,7 @@ addLayer("e", {
     ],
     branches: ["c"],
     layerShown() {
-        return player.d.unlocked;
+        return player.d.unlocked && player.thenewyearLay.treelayer == 0;
     },
     milestones: {
         0: {
@@ -1493,6 +1531,7 @@ addLayer("e", {
             },
             extra() {
                 let extra = new ExpantaNum(0);
+                extra = extra.add(tmp.f.baixieEffect[0])
                 return extra;
             },
             cost(x) {
@@ -1548,8 +1587,29 @@ addLayer("f", {
             unlocked: false,
             points: new ExpantaNum(0),
             p4m1p5: new ExpantaNum(0),
+            lastRandomNumberTick: Date.now(),
+            baixieRandomNumber: 1,
+            timesBaixied: new ExpantaNum(0),
+            timesWrongBaixied: new ExpantaNum(0),
+            autoBaixie: false,
+            lastAutoBaixie: Date.now(),
+            lastGreatAutoBaixie: Date.now(),
+            autobaixieStatus: 0,
+
+            p4m3: new ExpantaNum(0),
+            d1: new ExpantaNum(0),
+            d2: new ExpantaNum(0),
+            d3: new ExpantaNum(0),
+            d4: new ExpantaNum(0),
+            d5: new ExpantaNum(0),
+            d6: new ExpantaNum(0),
+            d7: new ExpantaNum(0),
+            d8: new ExpantaNum(0),
+
+            p4m10: new ExpantaNum(0),
         };
     },
+    p4m10color: "#9cafb6",
     p4m1p5Gain() {
         gain = new ExpantaNum(0);
         gain = gain.add(tmp.f.effect);
@@ -1592,11 +1652,46 @@ addLayer("f", {
         eff = player.f.p4m1p5.max(1).root(3).max(1);
         return eff.max(1);
     },
+    autoBaixieInterval() {
+        return 1- (player.f.timesBaixied.gte(180) ? 0.5 : 0)
+    },
     update(diff) {
-        if (player.f.unlocked)
+        if (player.f.unlocked){
+            player.f.p4m3 = player.f.p4m3
+            .add(tmp.f.p4m3Gain.mul(diff))
+            player.f.d1 = player.f.d1
+            .add(tmp.f.buyables[12].gain.mul(diff))
+            player.f.d2 = player.f.d2
+            .add(tmp.f.buyables[13].gain.mul(diff))
+            player.f.d3 = player.f.d3
+            .add(tmp.f.buyables[14].gain.mul(diff))
             player.f.p4m1p5 = player.f.p4m1p5
                 .add(tmp.f.p4m1p5Gain.times(diff))
                 .min(tmp.f.p4m1p5Gain.mul(1000));
+            if (Date.now() - player.f.lastRandomNumberTick>=tmp.f.numberInterval*1000){
+                player.f.lastRandomNumberTick = Date.now()
+                player.f.baixieRandomNumber = Math.floor(Math.random()*10)
+                if (Math.random()>tmp.f.add10Chance){
+                    player.f.baixieRandomNumber += 10
+                }
+                player.f.baixieRandomNumber *= (player.f.timesBaixied.gte(400) ? 5 : 1)
+            }
+            if (player.f.autoBaixie){
+                if (Date.now() - player.f.lastAutoBaixie >= 1000*tmp.f.autoBaixieInterval){
+                    if (player.f.baixieRandomNumber >= 10){
+                        layers.f.clickables[11].onClick()
+                    }
+                    player.f.lastAutoBaixie = Date.now()
+                }
+            }
+            
+        }
+    },
+    p4m3effect(){
+        
+        let eff = player.f.p4m3.add(1).max(1)
+        eff = eff.pow(0.6)
+        return eff
     },
     milestones: {
         0: {
@@ -1634,8 +1729,34 @@ addLayer("f", {
                 return player.f.points.gte(1000);
             },
         },
+        5: {
+            requirementDescription: "2.222e11 小朋友^4",
+            effectDescription: "解锁拜谢",
+            done() {
+                return player.f.points.gte(2.222e11);
+            },
+        },
+        6: {
+            requirementDescription: "e2.000e9 小朋友",
+            effectDescription: "解锁小朋友^4 Dimensions",
+            done() {
+                return player.points.gte("e2e9");
+            },
+            unlocked() {
+                return hasMilestone("f", 5)
+            }
+        },
+        7: {
+            requirementDescription: "e9.007e15 小朋友",
+            effectDescription: "解锁小朋友^4×10",
+            done() {
+                return player.points.gte("e9007199254740991");
+            },
+            unlocked () {
+                return hasMilestone("f", 6)
+            }
+        }
     },
-
     showTotal: true,
     showBest: true,
     color: "#380af7",
@@ -1703,7 +1824,72 @@ addLayer("f", {
         // Calculate the multiplier for main currency from bonuses
         mult = new ExpantaNum(1);
         if (hasMilestone("e", 5)) mult = mult.mul(10)
+        if (hasUpgrade("f", 12)) mult = mult.mul(upgradeEffect("f", 12))
+        if (hasUpgrade("f", 13)) mult = mult.mul(upgradeEffect("f", 13))
+        mult = mult.mul(tmp.f.baixieEffect[2])
+        mult = mult.mul(tmp.f.p4m3effect)
         return mult;
+    },
+    baixieCap() {
+        return new ExpantaNum(4.725e6)
+    },
+    clickables: {
+        11: {
+            display() {
+                return `拜谢!`
+            },
+            style() {
+                return {
+                    "font-size": "24px"
+                }
+            },
+            canClick(){
+                return true
+            },
+            onClick() {
+                if (player.f.baixieRandomNumber>=10){
+                    player.f.timesBaixied = player.f.timesBaixied
+                    .add(new ExpantaNum(player.f.timesBaixied.gte(700) ? 2 : 1)
+                    .mul(tmp.f.p4m3effect))
+                    .min(tmp.f.baixieCap)
+                    player.f.lastRandomNumberTick = Date.now()
+                    player.f.baixieRandomNumber = 4
+                } else {
+                    player.f.timesWrongBaixied = player.f.timesWrongBaixied.add(1)
+                    player.f.points = player.f.points.div(2)
+                }
+            }
+        },
+        12: {
+            display() {
+                return `自动化拜谢<br>${player.f.autoBaixie ? "ON" : "OFF"}`
+            },
+            style() {
+                return {
+                    "font-size": "18px"
+                }
+            },
+            canClick(){
+                return true
+            },
+            onClick() {
+                player.f.autoBaixie = !player.f.autoBaixie
+            }
+        },
+        21: {
+            display(){
+                return `重置维度以获得 <b>0.000</b> 小朋友^4×10<br>(5小时后更新)`
+            },
+            style(){return {
+                height: "120px",
+                width: "180px",
+                "font-size": "13px",
+                "border-radius": "25%",
+                border: "4px solid",
+                "border-color": "rgba(0, 0, 0, 0.125)",
+                "background-color": tmp.f.p4m10color
+            }}
+        }
     },
     upgrades: {
         11: {
@@ -1719,7 +1905,288 @@ addLayer("f", {
                 return `×${format(this.effect())}`;
             },
         },
+        12: {
+            title: "12",
+            description: "小朋友增加小朋友^4获取",
+            cost: new ExpantaNum(1e9),
+            effect() {
+                let eff = player.points.add(1).max(1).log10().max(1).log10().mul(6).max(1);
+                return eff;
+            },
+            effectDisplay() {
+                return `×${format(this.effect())}`;
+            },
+            unlocked() {
+                return hasMilestone("e", 8)
+            }
+        },
+        13: {
+            title: "13",
+            description: "小朋友^3.5×2增加小朋友^4获取",
+            cost: new ExpantaNum(1e10),
+            effect() {
+                let eff = player.e.p35m2.add(1).max(1).log10().max(1).log10().mul(6).max(1);
+                return eff;
+            },
+            effectDisplay() {
+                return `×${format(this.effect())}`;
+            },
+            unlocked() {
+                return hasUpgrade("f", 12)
+            }
+        },
+        
     },
+    baixieEffect() {
+        let a = player.f.timesBaixied.pow(2);
+        let b = new ExpantaNum(0)
+        let c = new ExpantaNum(1)
+        if (player.f.timesBaixied.gte(10)){
+            b = player.f.timesBaixied.max(1).log10().max(1).log10().pow(1.2).add(1)
+        }
+        if (player.f.timesBaixied.gte(50)){
+            c = player.f.timesBaixied.max(1).pow(1.3)
+        }
+        return [a, b, c]
+    },
+    numberInterval() {
+        return 0.7 - (player.f.timesBaixied.gte(180) ? 0.5 : 0)
+    },
+    add10Chance() {
+        return 0.7 - (player.f.timesBaixied.gte(250) ? 0.4 : 0)
+    },
+    p4m3Gain(){
+        let gain = tmp.f.buyables[11].gain
+        return gain
+    },
+    dimMultBase() {
+        let mult = new ExpantaNum(2);
+
+        return mult;
+    },
+    buyables: {
+        11: {
+            title: "小朋友^4维度1",
+            gain(x=this.bought()) {
+                let gain = this.effect().mul(x).div(10)
+                return gain
+            },
+            cost() {
+                let x=this.total()
+                let cost = ExpantaNum.pow(1e3, x).mul(1e18)
+                return cost.floor()
+            },
+            total() {
+                let total = getBuyableAmount("f", 11)
+                return total
+            },
+            bought() {
+                let bought = player.f.d1
+                return bought
+            },
+            effect() {
+                let effect = new ExpantaNum(1);
+                effect = tmp.f.dimMultBase.pow(this.total())
+                return effect
+            },
+            display() { // Everything else displayed in the buyable button after the title
+                return "生产小朋友^4×3\n\
+                价格: " + format(tmp[this.layer].buyables[this.id].cost)+" 小朋友^4\n\
+                乘法: " + format(tmp[this.layer].buyables[this.id].effect)+"×\n\
+                数量: " + formatWhole(this.total()) + "(" + formatWhole(this.bought()) + ")"
+            },
+            buy() { 
+                cost = tmp[this.layer].buyables[this.id].cost
+                if (tmp[this.layer].buyables[this.id].canAfford) {
+                    player.f.points = player.f.points.sub(cost).max(0)	
+                    player.f.d1 = player.f.d1.add(1).max(1)
+                    player[this.layer].buyables[this.id] = player[this.layer].buyables[this.id].add(1).max(1)
+                }
+            },
+            canAfford() {
+                    return player.f.points.gte(tmp[this.layer].buyables[this.id].cost)
+                },
+            buyMax(b) {
+                let cost = this.cost()
+                let f = player.f.points
+                
+                let max = f.div(1e18).max(10).log10().div(3).ceil().min(m)
+                let diff = max.sub(player.f.d1).min(b)
+                cost = ExpantaNum.sub(1,ExpantaNum.pow(1e3,max)).div(-999).mul(1e18)
+                if (tmp[this.layer].buyables[this.id].canAfford) {
+                    player.f.points = player.f.points.sub(cost).max(0)	
+                    player.f.d1 = player.f.d1.add(diff)
+                    player[this.layer].buyables[this.id] = player[this.layer].buyables[this.id].add(diff)
+                }
+            },
+        },
+        12: {
+            title: "小朋友^4维度2",
+            gain(x=this.bought()) {
+                let gain = this.effect().mul(x).div(10)
+                return gain
+            },
+            cost() {
+                let x=this.total()
+                let cost = ExpantaNum.pow(1e4, x).mul(1e19)
+                return cost.floor()
+            },
+            total() {
+                let total = getBuyableAmount("f", 12)
+                return total
+            },
+            bought() {
+                let bought = player.f.d2
+                return bought
+            },
+            effect() {
+                let effect = new ExpantaNum(1);
+                effect = tmp.f.dimMultBase.pow(this.total())
+                return effect
+            },
+            display() { // Everything else displayed in the buyable button after the title
+                return "生产小朋友^4维度1\n\
+                价格: " + format(tmp[this.layer].buyables[this.id].cost)+" 小朋友^4\n\
+                乘法: " + format(tmp[this.layer].buyables[this.id].effect)+"×\n\
+                数量: " + formatWhole(this.total()) + "(" + formatWhole(this.bought()) + ")"
+            },
+            buy() { 
+                cost = tmp[this.layer].buyables[this.id].cost
+                if (tmp[this.layer].buyables[this.id].canAfford) {
+                    player.f.points = player.f.points.sub(cost).max(0)	
+                    player.f.d2 = player.f.d2.add(1).max(1)
+                    player[this.layer].buyables[this.id] = player[this.layer].buyables[this.id].add(1).max(1)
+                }
+            },
+            canAfford() {
+                    return player.f.points.gte(tmp[this.layer].buyables[this.id].cost)
+                },
+            buyMax(b) {
+                let cost = this.cost()
+                let f = player.f.points
+                
+                let max = f.div(1e19).max(10).log10().div(4).ceil().min(m)
+                let diff = max.sub(player.f.d2).min(b)
+                cost = ExpantaNum.sub(1,ExpantaNum.pow(1e4,max)).div(-999).mul(1e19)
+                if (tmp[this.layer].buyables[this.id].canAfford) {
+                    player.f.points = player.f.points.sub(cost).max(0)	
+                    player.f.d2 = player.f.d2.add(diff)
+                    player[this.layer].buyables[this.id] = player[this.layer].buyables[this.id].add(diff)
+                }
+            },
+        },
+        13: {
+            title: "小朋友^4维度3",
+            gain(x=this.bought()) {
+                let gain = this.effect().mul(x).div(10)
+                return gain
+            },
+            cost() {
+                let x=this.total()
+                let cost = ExpantaNum.pow(1e6, x).mul(1e22)
+                return cost.floor()
+            },
+            total() {
+                let total = getBuyableAmount("f", 13)
+                return total
+            },
+            bought() {
+                let bought = player.f.d3
+                return bought
+            },
+            effect() {
+                let effect = new ExpantaNum(1);
+                effect = tmp.f.dimMultBase.pow(this.total())
+                return effect
+            },
+            display() { // Everything else displayed in the buyable button after the title
+                return "生产小朋友^4维度2\n\
+                价格: " + format(tmp[this.layer].buyables[this.id].cost)+" 小朋友^4\n\
+                乘法: " + format(tmp[this.layer].buyables[this.id].effect)+"×\n\
+                数量: " + formatWhole(this.total()) + "(" + formatWhole(this.bought()) + ")"
+            },
+            buy() { 
+                cost = tmp[this.layer].buyables[this.id].cost
+                if (tmp[this.layer].buyables[this.id].canAfford) {
+                    player.f.points = player.f.points.sub(cost).max(0)	
+                    player.f.d3 = player.f.d3.add(1).max(1)
+                    player[this.layer].buyables[this.id] = player[this.layer].buyables[this.id].add(1).max(1)
+                }
+            },
+            canAfford() {
+                    return player.f.points.gte(tmp[this.layer].buyables[this.id].cost)
+                },
+            buyMax(b) {
+                let cost = this.cost()
+                let f = player.f.points
+                
+                let max = f.div(1e22).max(10).log10().div(6).ceil().min(m)
+                let diff = max.sub(player.f.d3).min(b)
+                cost = ExpantaNum.sub(1,ExpantaNum.pow(1e6,max)).div(-999).mul(1e22)
+                if (tmp[this.layer].buyables[this.id].canAfford) {
+                    player.f.points = player.f.points.sub(cost).max(0)	
+                    player.f.d3 = player.f.d3.add(diff)
+                    player[this.layer].buyables[this.id] = player[this.layer].buyables[this.id].add(diff)
+                }
+            },
+        },
+        14: {
+            title: "小朋友^4维度4",
+            gain(x=this.bought()) {
+                let gain = this.effect().mul(x).div(10)
+                return gain
+            },
+            cost() {
+                let x=this.total()
+                let cost = ExpantaNum.pow(1e8, x).mul(1e35)
+                return cost.floor()
+            },
+            total() {
+                let total = getBuyableAmount("f", 14)
+                return total
+            },
+            bought() {
+                let bought = player.f.d4
+                return bought
+            },
+            effect() {
+                let effect = new ExpantaNum(1);
+                effect = tmp.f.dimMultBase.pow(this.total())
+                return effect
+            },
+            display() { // Everything else displayed in the buyable button after the title
+                return "生产小朋友^4维度3\n\
+                价格: " + format(tmp[this.layer].buyables[this.id].cost)+" 小朋友^4\n\
+                乘法: " + format(tmp[this.layer].buyables[this.id].effect)+"×\n\
+                数量: " + formatWhole(this.total()) + "(" + formatWhole(this.bought()) + ")"
+            },
+            buy() { 
+                cost = tmp[this.layer].buyables[this.id].cost
+                if (tmp[this.layer].buyables[this.id].canAfford) {
+                    player.f.points = player.f.points.sub(cost).max(0)	
+                    player.f.d4 = player.f.d4.add(1).max(1)
+                    player[this.layer].buyables[this.id] = player[this.layer].buyables[this.id].add(1).max(1)
+                }
+            },
+            canAfford() {
+                    return player.f.points.gte(tmp[this.layer].buyables[this.id].cost)
+                },
+            buyMax(b) {
+                let cost = this.cost()
+                let f = player.f.points
+                
+                let max = f.div(1e35).max(10).log10().div(8).ceil().min(m)
+                let diff = max.sub(player.f.d4).min(b)
+                cost = ExpantaNum.sub(1,ExpantaNum.pow(1e8,max)).div(-999).mul(1e35)
+                if (tmp[this.layer].buyables[this.id].canAfford) {
+                    player.f.points = player.f.points.sub(cost).max(0)	
+                    player.f.d4 = player.f.d4.add(diff)
+                    player[this.layer].buyables[this.id] = player[this.layer].buyables[this.id].add(diff)
+                }
+            },
+        },
+    },
+    
     tabFormat: {
         Main: {
             content: [
@@ -1746,7 +2213,125 @@ addLayer("f", {
                 "upgrades",
             ],
         },
-        /*"Challenges": {
+        "拜谢": {
+            content: [
+                "main-display",
+                "prestige-button",
+                "resource-display",
+                [
+                    "raw-html",
+                    function () {
+                        return (
+                            "你有 " +
+                            `<h2 style="color: #380af7; text-shadow: #380af7 0px 0px 10px;">${format(
+                                player.f.p4m1p5
+                            )}(+${format(tmp.f.p4m1p5Gain)}/s)</h2>` +
+                            "小朋友^4×1.5, " +
+                            `×${format(tmp.f.effect2)}小朋友^3.5×2获取(在${format(
+                                tmp.f.p4m1p5Gain.mul(1000)
+                            )}受硬上限)`
+                        );
+                    },
+                ],
+                "blank",
+                "blank",
+                ["display-text", "下面有一个随机的数字，每当数字超过10的时候，就需要点击下面的\"拜谢\"(不要在不合时宜的时候拜谢，拜谢错误会将小朋友^4数量×0.5)"],
+                ["raw-html", function() {
+                    return `<div style="border: 2px solid #380af7; width: 200px; height: 200px; margin: auto;">
+                    <h2 style="color: #380af7; text-shadow: #380af7 0px 0px 10px;">${player.f.baixieRandomNumber}</h2>
+                    </div>`
+                }],
+                ["raw-html", function() {
+                    return `你拜谢了<h2 style="color: #380af7; text-shadow: #380af7 0px 0px 10px;">${format(player.f.timesBaixied)}</h2>次，获得`+
+                    `${format(tmp.f.baixieEffect[0])}免费的\"小朋友^3获取\"`
+                }],
+                /*["raw-html", function() {
+                    return `你拜谢错了<h2 style="color: #380af7; text-shadow: #380af7 0px 0px 10px;">${format(player.f.timesWrongBaixied)}</h2>次，获得`+
+                    `, ×1.000小朋友获取`
+                }],*/
+                ["raw-html", function() {
+                    if (player.f.timesBaixied.lt(10)) return `超过10次拜谢解锁拜谢第二效果`
+                    return `拜谢使小朋友获取^${format(tmp.f.baixieEffect[1])}`
+                }],
+                ["raw-html", function() {
+                    if (player.f.timesBaixied.lt(50)) return `超过50次拜谢解锁拜谢第三效果`
+                    return `拜谢使小朋友^4获取×${format(tmp.f.baixieEffect[2])}`
+                }],
+                ["raw-html", function() {
+                    if (player.f.timesBaixied.lt(60)) return `超过60次拜谢解锁拜谢第四效果`
+                    return `自动化拜谢：当前每${formatTime(tmp.f.autoBaixieInterval)}拜谢一次`
+                }],
+                ["raw-html", function() {
+                    if (player.f.timesBaixied.lt(180)) return `超过180次拜谢解锁拜谢第五效果`
+                    return `拜谢间隔减少0.5s， 随机数变化减少0.5s`
+                }],
+                ["raw-html", function() {
+                    if (player.f.timesBaixied.lt(250)) return `超过250次拜谢解锁拜谢第六效果`
+                    return `随机数+10几率从30%到70%`
+                }],
+                ["raw-html", function() {
+                    if (player.f.timesBaixied.lt(400)) return `超过400次拜谢解锁拜谢第七效果`
+                    return `随机数×5`
+                }],
+                ["raw-html", function() {
+                    if (player.f.timesBaixied.lt(700)) return `超过700次拜谢解锁拜谢第八效果`
+                    return `拜谢次数×2`
+                }],
+                ["raw-html", function() {
+                    if (Date.now() - player.f.lastGreatAutoBaixie < 500){
+                        return "已成功自动拜谢！"
+                    }
+                    return ""
+                }],
+                ["clickable", 11],
+                ["clickable", 12],
+            ],
+            unlocked() {
+                return hasMilestone("f", 5)
+            }
+        },
+        "Dimensions": {
+            content: [
+                "main-display",
+                "prestige-button",
+                "resource-display",
+                [
+                    "raw-html",
+                    function () {
+                        return (
+                            "你有 " +
+                            `<h2 style="color: #380af7; text-shadow: #380af7 0px 0px 10px;">${format(
+                                player.f.p4m3
+                            )}(+${format(tmp.f.p4m3Gain)}/s)</h2>` +
+                            "小朋友^4×3， 使小朋友^4和拜谢次数获取×"+
+                            `<h2 style="color: #380af7; text-shadow: #380af7 0px 0px 10px;">${format(
+                                tmp.f.p4m3effect
+                            )}</h2>`
+                        );
+                    },
+                ],
+                ["buyable", 11],
+                ["buyable", 12],
+                ["buyable", 13],
+                ["buyable", 14]
+            ],
+            unlocked() {
+                return hasMilestone("f", 6)
+            }
+        },
+        "小朋友^4×10": {
+            content: [
+                "main-display",
+                "resource-display",
+                ["clickable", 21]
+            ],
+            unlocked() {
+                return hasMilestone("f", 7)
+            }
+        }
+
+        /*
+        "Challenges": {
                 content:[
                     "main-display",
                     "prestige-button",
@@ -1776,10 +2361,62 @@ addLayer("f", {
     ],
     branches: ["d", "e"],
     layerShown() {
-        return player.d.unlocked || player.e.unlocked;
+        return (player.d.unlocked || player.e.unlocked) && player.thenewyearLay.treelayer == 0;
     },
+
 });
 
+function layerRegisterComponent(){
+}
+
+addLayer("test1", {
+    name: "小朋友^", // This is optional, only used in a few places, If absent it just uses the layer id.
+    symbol: "J9e15", // This appears on the layer's node. Default is the id with the first letter capitalized
+    position: 0, // Horizontal position within a row. By default it uses the layer id and sorts in alphabetical order
+    startData() {
+        return {
+            unlocked: false,
+            points: new ExpantaNum(0),
+        };
+    },
+
+    showTotal: true,
+    showBest: true,
+    color: "#380af7",
+    requires: ExpantaNum.POSITIVE_INFINITY, // Can be a function that takes requirement increases into account
+    resource: "测试点数^2", // Name of prestige currency
+    baseResource: "小朋友", // Name of resource prestige is based on
+    baseAmount() {
+        return player.points;
+    }, // Get the current amount of baseResource
+    type: "custom", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
+
+    getResetGain() {
+        return ExpantaNum.ZERO
+    },
+    getNextAt(canBuyMax = false) {
+        return ExpantaNum.POSITIVE_INFINITY;
+    },
+    canReset() {
+        return false;
+    },
+    tabFormat: {
+        Main: {
+            content: [
+                "main-display",
+                "prestige-button",
+                "resource-display",
+                "blank",
+                "milestones",
+                "upgrades",
+            ],
+        },
+    },
+    row: 0, // Row the layer is in on the tree (0 is the first row)
+    layerShown() {
+        return player.thenewyearLay.treelayer == 1;
+    },
+})
 addLayer("thenewyearLay", {
     name: "测试", // This is optional, only used in a few places, If absent it just uses the layer id.
     symbol: "K9e15", // This appears on the layer's node. Default is the id with the first letter capitalized
@@ -1788,6 +2425,7 @@ addLayer("thenewyearLay", {
         return {
             unlocked: true,
             points: new ExpantaNum(0),
+            treelayer: 0
         };
     },
     showTotal: true,
@@ -1796,15 +2434,19 @@ addLayer("thenewyearLay", {
     requires: ExpantaNum(1), // Can be a function that takes requirement increases into account
     resource: "测试点数", // Name of prestige currency
     baseResource: "小朋友", // Name of resource prestige is based on
+    resetsNothing() {return true},
+    exponent: ExpantaNum(1),
     baseAmount() {
         return player.points;
     }, // Get the current amount of baseResource
-    type: "none", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
+    type: "normal", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
     row: 9, // Row the layer is in on the tree (0 is the first row)
     tabFormat: {
         Main: {
             content: [
-                "blank",
+                "main-display",
+                "prestige-button",
+                "resource-display",
                 [
                     "display-text",
                     function () {
@@ -1813,8 +2455,79 @@ addLayer("thenewyearLay", {
                         )}`;
                     },
                 ],
+                ["infobox", "lore"],
                 ["bar", "progressof2025"],
+                "clickables",
+                "grid",
+                "achievements",
+                "buyables",
+                "challenges",
+                "milestones",
+                "upgrades"
             ],
+        },
+    },
+    milestones: {
+        0: {
+            requirementDescription: "123 waffles",
+            effectDescription: "blah",
+            done() { return player.p.points.gte(123) }
+        }
+    },
+    buyables: {
+        11: {
+            title: "test",
+            cost: ExpantaNum.POSITIVE_INFINITY,
+            display() {return "8U9U89"},
+            buy(){},
+            canAfford(){return true},
+            canSellOne(){return true},
+            sellOne(){},
+            showRespec(){return true},
+        }
+    },
+    infoboxes: {
+        lore: {
+            title: "foo",
+            body() { return "bar" },
+        },
+    },
+    challenges: {
+        11: {
+            name: "Ouch",
+            challengeDescription: "description of ouchie",
+            canComplete: function() {return player.points.gte(100)},
+            goal: new ExpantaNum(100),
+            rewardDescription: "小朋友获取×1"
+        },
+    },
+    grid: {
+        rows: 4, // If these are dynamic make sure to have a max value as well!
+        cols: 5,
+        getStartData(id) {
+            return 0
+        },
+        getUnlocked(id) { // Default
+            return true
+        },
+        getCanClick(data, id) {
+            return true
+        },
+        onClick(data, id) { 
+            player[this.layer].grid[id]++
+            player.thenewyearLay.treelayer = Math.floor(id/100-1)*5 + id%100-1
+        },
+        getDisplay(data, id) {
+            return `Switch to layer ${Math.floor(id/100-1)*5 + id%100-1}(${data} with id${id})`
+        },
+    
+    },
+    achievements: {
+        11: {
+            name: "Achievement",
+            done(){
+                return true;
+            }
         },
     },
     bars: {
@@ -1833,4 +2546,37 @@ addLayer("thenewyearLay", {
             },
         },
     },
+    clickables: {
+        rows: 4,
+        cols: 2,
+        11: {
+            display() {
+                return "<h2>Switch to Layer #0</h2>"
+            },
+            canClick() {return true},
+            onClick() {
+                player.thenewyearLay.treelayer = 0
+            },
+        },
+        12: {
+            display() {
+                return "<h2>Switch to Layer #1</h2>"
+            },
+            canClick() {return true},
+            onClick() {
+                player.thenewyearLay.treelayer = 1
+            },
+        },
+    }
 });
+function checkarrayUndefined(data, keyname){
+    for (let key in data){
+        if (data[key] instanceof ExpantaNum){
+            if (data[key].array === void 0){
+                console.log(`${keyname}.${key}`, "has a undefined array")
+            }
+        } else if (typeof data[key]=="object"){
+            checkarrayUndefined(data[key], `${keyname}.${key}`)
+        }
+    }
+}
