@@ -12,11 +12,13 @@ let modInfo = {
 
 // Set your version in num and name
 let VERSION = {
-	num: "0.4",
-	name: "小朋友^4×3",
+	num: "0.41",
+	name: "网络功能测试",
 }
 
 let changelog = `<h1>更新日志:</h1><br>
+<h3>v0.41</h3><br>
+    - 增加了网络功能<br>
 <h3>v0.4</h3><br>
     - 增加了小朋友^4维度<br>
 	- 增加了拜谢<br>
