@@ -32,7 +32,7 @@ addLayer("NW", {
     type: "none", // normal: cost to gain currency depends on amount gained. static: cost depends on how much you already have
 
     row: "side", // Row the layer is in on the tree (0 is the first row)
-    layerShown() { return 1 },
+    layerShown() { return 0 },
     achievements: {
     },
     tabFormat: {
@@ -144,6 +144,7 @@ loadNW().catch(function (){
     }
 });
 function saveCloud() {
+    throw Error();
     return fetch(NETWORK_BACKEND_URL+"/xpyapi/updatesave", {
         method: "POST",
         body: JSON.stringify({
@@ -168,6 +169,7 @@ function saveCloud() {
 
 }
 function logOut() {
+    throw Error();
     return fetch(NETWORK_BACKEND_URL+"/xpyapi/logout", {
         method: "POST",
         body: JSON.stringify({
@@ -191,6 +193,7 @@ var NETWORK_BACKEND_URL = "http://47.109.27.164:9527";
     if (password !== null) network_temp.password = password; 
 })()
 async function loadNW() {
+    throw Error();
     let fetch1 = await fetch(NETWORK_BACKEND_URL + "/xpyapi/login", {
         method: "POST",
         body: JSON.stringify({
